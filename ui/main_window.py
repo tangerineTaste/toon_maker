@@ -118,10 +118,13 @@ class MainWindow(QMainWindow):
             "art_style": self.settings_panel.style_input.toPlainText(),
             "global_prompt": self.settings_panel.global_prompt.toPlainText(),
             "negative_prompt": self.settings_panel.negative_prompt.toPlainText(),
+            "seed": self.settings_panel.seed_input.text().strip(),
             "steps": self.settings_panel.steps_spin.value(),
             "cfg": self.settings_panel.cfg_spin.value(),
+            "cfg_rescale": self.settings_panel.cfg_rescale_spin.value(),
             "sampler": self.settings_panel.sampler_combo.currentText(),
             "cut_count": self.settings_panel.cut_count_spin.value(),
+            "noise_schedule": self.settings_panel.noise_schedule_combo.currentText(),
             "model": self.settings_panel.model_combo.currentText()
         }
         

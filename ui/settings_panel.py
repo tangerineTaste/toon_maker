@@ -38,12 +38,11 @@ class SettingsPanel(QWidget):
         self.char_info_input = QTextEdit()
         self.char_info_input.setMaximumHeight(60)
         self.char_info_input.setPlaceholderText("예: 1girl, pink hair, twintails, red eyes, school uniform")
+        story_layout.addWidget(self.char_info_input)
+        
+        cut_layout = QFormLayout()
         self.cut_count_spin = QSpinBox()
         self.cut_count_spin.setRange(2, 5)
-        
-        
-        story_layout.addWidget(self.char_info_input)
-        cut_layout = QFormLayout()
         cut_layout.addRow("🎬 만화 컷 수 (2~5):", self.cut_count_spin)
         story_layout.addLayout(cut_layout)
         layout.addWidget(story_group)
@@ -51,42 +50,50 @@ class SettingsPanel(QWidget):
         # 3. 🎨 그림체 & 퀄리티
         nai_group = QGroupBox("🎨 그림체 & 퀄리티")
         nai_layout = QFormLayout(nai_group)
+        
         self.model_combo = QComboBox()
         self.model_combo.addItems([
             "nai-diffusion-3",              
-            "nai-diffusion-furry-3",       
+            "nai-diffusion-furry-3",        
             "nai-diffusion-4-curated-preview", 
-            "nai-diffusion-4-full",        
+            "nai-diffusion-4-full",         
             "nai-diffusion-4-5-curated",    
-            "nai-diffusion-4-5-full"
+            "nai-diffusion-4-5-full"        
         ])
-
+        
         self.style_input = QTextEdit()
         self.style_input.setMaximumHeight(60)
-        self.style_input.setPlaceholderText("그림체 스타일 태그 (예: retro anime, 90s anime style, highly detailed illustration)")
-        self.global_prompt = QTextEdit()
-        self.global_prompt.setMaximumHeight(60)
-    
-        nai_layout.addRow("🖼️ 그림체 태그:", self.style_input) 
-
-        nai_layout.addRow("모델:", self.model_combo)
+        self.style_input.setPlaceholderText("예: retro anime, highly detailed")
+        
         self.global_prompt = QTextEdit()
         self.global_prompt.setMaximumHeight(60)
         self.negative_prompt = QTextEdit()
         self.negative_prompt.setMaximumHeight(60)
+        self.seed_input = QLineEdit()
+        self.seed_input.setPlaceholderText("비워두면 랜덤 (-1)")
         self.steps_spin = QSpinBox()
         self.steps_spin.setRange(10, 50)
         self.cfg_spin = QDoubleSpinBox()
         self.cfg_spin.setRange(1.0, 10.0)
         self.cfg_spin.setSingleStep(0.5)
+        self.cfg_rescale_spin = QDoubleSpinBox()
+        self.cfg_rescale_spin.setRange(0.0, 1.0)
+        self.cfg_rescale_spin.setSingleStep(0.05)
         self.sampler_combo = QComboBox()
         self.sampler_combo.addItems(["k_euler_ancestral", "k_euler", "k_dpmpp_2s_ancestral", "k_dpmpp_2m"])
+        self.noise_schedule_combo = QComboBox()
+        self.noise_schedule_combo.addItems(["native", "karras", "exponential", "polyexponential"])
 
+        nai_layout.addRow("🚀 모델(엔진):", self.model_combo)
+        nai_layout.addRow("🖼️ 그림체 태그:", self.style_input)
         nai_layout.addRow("공통 태그:", self.global_prompt)
         nai_layout.addRow("제외 태그:", self.negative_prompt)
+        nai_layout.addRow("Seed:", self.seed_input)
         nai_layout.addRow("Steps:", self.steps_spin)
         nai_layout.addRow("CFG Scale:", self.cfg_spin)
+        nai_layout.addRow("CFG Rescale:", self.cfg_rescale_spin)
         nai_layout.addRow("Sampler:", self.sampler_combo)
+        nai_layout.addRow("Noise Schedule:", self.noise_schedule_combo)
         layout.addWidget(nai_group)
 
         layout.addStretch()
@@ -112,7 +119,7 @@ class SettingsPanel(QWidget):
         self.load_settings()
 
     def load_settings(self):
-        """config.json 읽어서 설정 불러오기"""
+        """config.json 읽어서 기획안 데이터까지 로드"""
         if os.path.exists("config.json"):
             try:
                 with open("config.json", "r", encoding="utf-8") as f:
@@ -120,37 +127,55 @@ class SettingsPanel(QWidget):
                     
                 self.gemini_key_input.setText(config.get("gemini_api_key", ""))
                 self.novelai_api_key.setText(config.get("novelai_api_key", ""))
-
+                
+                self.story_input.setText(config.get("story", ""))
+                self.char_info_input.setText(config.get("char_info", ""))
+                self.style_input.setText(config.get("art_style", ""))
+                
                 saved_model = config.get("model", "nai-diffusion-3")
                 idx = self.model_combo.findText(saved_model)
                 if idx >= 0:
                     self.model_combo.setCurrentIndex(idx)
-
-                self.style_input.setText(config.get("art_style", ""))
+                    
                 self.global_prompt.setText(config.get("global_prompt", "masterpiece, best quality, very aesthetic, absurdres"))
                 self.negative_prompt.setText(config.get("negative_prompt", "lowres, bad anatomy, bad hands, text, error, missing fingers, worst quality, low quality"))
+                self.seed_input.setText(str(config.get("seed", "")))
                 self.steps_spin.setValue(config.get("steps", 28))
                 self.cfg_spin.setValue(config.get("cfg", 5.0))
+                self.cfg_rescale_spin.setValue(config.get("cfg_rescale", 0.2))
                 self.cut_count_spin.setValue(config.get("cut_count", 5))
                 
                 sampler = config.get("sampler", "k_euler_ancestral")
-                idx = self.sampler_combo.findText(sampler)
-                if idx >= 0:
-                    self.sampler_combo.setCurrentIndex(idx)
+                s_idx = self.sampler_combo.findText(sampler)
+                if s_idx >= 0:
+                    self.sampler_combo.setCurrentIndex(s_idx)
+
+                noise_sched = config.get("noise_schedule", "native")
+                n_idx = self.noise_schedule_combo.findText(noise_sched)
+                if n_idx >= 0: self.noise_schedule_combo.setCurrentIndex(n_idx)
+
             except Exception as e:
                 print(f"config.json 오류 발생 (로드 실패): {e}")
 
     def save_settings(self):
-        """현재 입력된 값들을 config.json으로 저장"""
+        """현재 입력된 기획안까지 싹 다 config.json에 구워버리기 😈"""
         config = {
             "gemini_api_key": self.gemini_key_input.text().strip(),
             "novelai_api_key": self.novelai_api_key.text().strip(),
+            
+            "story": self.story_input.toPlainText().strip(),
+            "char_info": self.char_info_input.toPlainText().strip(),
+            "art_style": self.style_input.toPlainText().strip(),
+            
             "model": self.model_combo.currentText(),
             "global_prompt": self.global_prompt.toPlainText().strip(),
             "negative_prompt": self.negative_prompt.toPlainText().strip(),
+            "seed": self.seed_input.text().strip(),
             "steps": self.steps_spin.value(),
             "cfg": self.cfg_spin.value(),
+            "cfg_rescale": self.cfg_rescale_spin.value(),
             "sampler": self.sampler_combo.currentText(),
+            "noise_schedule": self.noise_schedule_combo.currentText(),
             "cut_count": self.cut_count_spin.value()
         }
         try:
@@ -160,7 +185,6 @@ class SettingsPanel(QWidget):
             self.save_btn.setText("✅ 저장 완료! (config.json)")
             self.save_btn.setStyleSheet("QPushButton { background-color: #32CD32; color: black; font-weight: bold; padding: 10px; border-radius: 5px; }")
             
-            # 1.5초 뒤에 원래 버튼으로 원상복구
             QTimer.singleShot(1500, self.reset_save_btn)
         except Exception as e:
             print(f"config.json 오류 발생 (저장 실패): {e}")

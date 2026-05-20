@@ -146,7 +146,10 @@ class SingleCutWorker(QThread):
                 steps=self.config.get("steps", 28), 
                 cfg=self.config.get("cfg", 5.0),
                 sampler=self.config.get("sampler", "k_euler_ancestral"),
-                model=self.config.get("model", "nai-diffusion-3")
+                model=self.config.get("model", "nai-diffusion-3"),
+                seed=self.config.get("seed", ""),
+                cfg_rescale=self.config.get("cfg_rescale", 0.2),
+                noise_schedule=self.config.get("noise_schedule", "native")
             )
             self.finished_signal.emit(self.seq_num, img_bytes)
         except Exception as e:

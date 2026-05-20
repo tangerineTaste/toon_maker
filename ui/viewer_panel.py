@@ -1,5 +1,4 @@
-# ui/viewer_panel.py
-from PyQt6.QtWidgets import QWidget, QGridLayout, QScrollArea, QHBoxLayout,QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QGridLayout, QScrollArea, QHBoxLayout,QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 
 class ViewerPanel(QScrollArea):
@@ -31,9 +30,23 @@ class ViewerPanel(QScrollArea):
             }
         """)
         
-        self.grid_layout = QGridLayout(self.page_widget)
-        self.grid_layout.setSpacing(12) 
-        self.grid_layout.setContentsMargins(25, 25, 25, 25) 
+        self.page_layout = QVBoxLayout(self.page_widget)
+        self.page_layout.setContentsMargins(20, 15, 20, 20)
+        self.page_layout.setSpacing(5)
+
+        # 간지나는 헤더 타이틀 탑재 
+        self.header_label = QLabel("PAGE 1")
+        self.header_label.setStyleSheet("font-size: 20px; font-weight: 900; color: #111111; border: none; border-bottom: 4px solid #111111; padding-bottom: 5px;")
+        self.page_layout.addWidget(self.header_label)
+
+        self.grid_container = QWidget()
+        self.grid_layout = QGridLayout(self.grid_container)
+        
+        self.grid_layout.setSpacing(0) 
+        self.grid_layout.setContentsMargins(0, 5, 0, 0) 
+        
+        self.page_layout.addWidget(self.grid_container)
+        self.page_layout.setStretchFactor(self.grid_container, 1)
         
         self.cards = {}
         self.setup_grid()
@@ -45,7 +58,12 @@ class ViewerPanel(QScrollArea):
         """선택한 컷 수(2~5)에 맞춰서 프레임을 원고지 안에 배치"""
         self.clear_viewer()
         from ui.comic_card import ComicCard
-        
+
+        if cut_count == 5:
+            self.page_widget.setFixedSize(860, 1600)
+        else:
+            self.page_widget.setFixedSize(860, 1216)
+
         def add_card(seq_num, row, col, row_span, col_span):
             card = ComicCard(seq_num)
             self.cards[seq_num] = card
@@ -69,6 +87,13 @@ class ViewerPanel(QScrollArea):
             add_card(3, 1, 2, 1, 3)
             add_card(4, 2, 0, 1, 3)
             add_card(5, 2, 3, 1, 2)
+
+            self.grid_layout.setRowStretch(0, 5) 
+            self.grid_layout.setRowStretch(1, 4) 
+            self.grid_layout.setRowStretch(2, 4)
+        
+        for i in range(5):
+            self.grid_layout.setColumnStretch(i, 1)
 
     def clear_viewer(self):
         """뷰어 비우기 (초기화용)"""

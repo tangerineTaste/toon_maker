@@ -17,26 +17,30 @@ class ImageGenerateWorker(QThread):
     def get_optimal_size(self, seq_num):
         cut_count = self.config.get("cut_count", 5)
         
+        LANDSCAPE = (1216, 832)  # 가로형
+        PORTRAIT = (832, 1216)   # 세로형
+        SQUARE = (1024, 1024)    # 정방형
+
         if cut_count == 2:
-            if seq_num == 1: return 512, 768    # 2칸 넓이
-            if seq_num == 2: return 704, 768    # 3칸 넓이
+            if seq_num == 1: return PORTRAIT    
+            if seq_num == 2: return PORTRAIT    
         elif cut_count == 3:
-            if seq_num == 1: return 1216, 448   # 5칸 통짜 와이드
-            if seq_num == 2: return 512, 768
-            if seq_num == 3: return 704, 768
+            if seq_num == 1: return LANDSCAPE   
+            if seq_num == 2: return PORTRAIT
+            if seq_num == 3: return SQUARE
         elif cut_count == 4:
-            if seq_num == 1: return 1216, 448
-            if seq_num == 2: return 512, 768
-            if seq_num == 3: return 704, 768
-            if seq_num == 4: return 1216, 448   # 바닥 와이드
+            if seq_num == 1: return LANDSCAPE
+            if seq_num == 2: return PORTRAIT
+            if seq_num == 3: return SQUARE
+            if seq_num == 4: return LANDSCAPE   
         else: 
-            if seq_num == 1: return 1216, 448
-            if seq_num == 2: return 512, 768
-            if seq_num == 3: return 704, 768
-            if seq_num == 4: return 704, 768
-            if seq_num == 5: return 512, 768
+            if seq_num == 1: return LANDSCAPE  
+            if seq_num == 2: return PORTRAIT   
+            if seq_num == 3: return SQUARE     
+            if seq_num == 4: return SQUARE     
+            if seq_num == 5: return PORTRAIT  
             
-        return 832, 1216 
+        return PORTRAIT
 
     def run(self):
         try:
@@ -96,12 +100,33 @@ class SingleCutWorker(QThread):
         self.negative_prompt = config.get("negative_prompt", "")
 
     def get_optimal_size(self, seq_num):
-        if seq_num == 1: return 1216, 448   
-        elif seq_num == 2: return 512, 768    
-        elif seq_num == 3: return 704, 768    
-        elif seq_num == 4: return 704, 768    
-        elif seq_num == 5: return 512, 768    
-        else: return 832, 1216   
+
+        cut_count = self.config.get("cut_count", 5)
+
+        LANDSCAPE = (1216, 832)  # 가로형
+        PORTRAIT = (832, 1216)   # 세로형
+        SQUARE = (1024, 1024)    # 정방형
+
+        if cut_count == 2:
+            if seq_num == 1: return PORTRAIT    
+            if seq_num == 2: return PORTRAIT    
+        elif cut_count == 3:
+            if seq_num == 1: return LANDSCAPE   
+            if seq_num == 2: return PORTRAIT
+            if seq_num == 3: return SQUARE
+        elif cut_count == 4:
+            if seq_num == 1: return LANDSCAPE
+            if seq_num == 2: return PORTRAIT
+            if seq_num == 3: return SQUARE
+            if seq_num == 4: return LANDSCAPE   
+        else: 
+            if seq_num == 1: return LANDSCAPE  
+            if seq_num == 2: return PORTRAIT   
+            if seq_num == 3: return SQUARE     
+            if seq_num == 4: return SQUARE     
+            if seq_num == 5: return PORTRAIT 
+            
+        return PORTRAIT
 
     def run(self):
         try:

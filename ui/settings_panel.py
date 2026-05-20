@@ -51,6 +51,25 @@ class SettingsPanel(QWidget):
         # 3. 🎨 그림체 & 퀄리티
         nai_group = QGroupBox("🎨 그림체 & 퀄리티")
         nai_layout = QFormLayout(nai_group)
+        self.model_combo = QComboBox()
+        self.model_combo.addItems([
+            "nai-diffusion-3",              
+            "nai-diffusion-furry-3",       
+            "nai-diffusion-4-curated-preview", 
+            "nai-diffusion-4-full",        
+            "nai-diffusion-4-5-curated",    
+            "nai-diffusion-4-5-full"
+        ])
+
+        self.style_input = QTextEdit()
+        self.style_input.setMaximumHeight(60)
+        self.style_input.setPlaceholderText("그림체 스타일 태그 (예: retro anime, 90s anime style, highly detailed illustration)")
+        self.global_prompt = QTextEdit()
+        self.global_prompt.setMaximumHeight(60)
+    
+        nai_layout.addRow("🖼️ 그림체 태그:", self.style_input) 
+
+        nai_layout.addRow("모델:", self.model_combo)
         self.global_prompt = QTextEdit()
         self.global_prompt.setMaximumHeight(60)
         self.negative_prompt = QTextEdit()
@@ -101,6 +120,13 @@ class SettingsPanel(QWidget):
                     
                 self.gemini_key_input.setText(config.get("gemini_api_key", ""))
                 self.novelai_api_key.setText(config.get("novelai_api_key", ""))
+
+                saved_model = config.get("model", "nai-diffusion-3")
+                idx = self.model_combo.findText(saved_model)
+                if idx >= 0:
+                    self.model_combo.setCurrentIndex(idx)
+
+                self.style_input.setText(config.get("art_style", ""))
                 self.global_prompt.setText(config.get("global_prompt", "masterpiece, best quality, very aesthetic, absurdres"))
                 self.negative_prompt.setText(config.get("negative_prompt", "lowres, bad anatomy, bad hands, text, error, missing fingers, worst quality, low quality"))
                 self.steps_spin.setValue(config.get("steps", 28))
@@ -119,6 +145,7 @@ class SettingsPanel(QWidget):
         config = {
             "gemini_api_key": self.gemini_key_input.text().strip(),
             "novelai_api_key": self.novelai_api_key.text().strip(),
+            "model": self.model_combo.currentText(),
             "global_prompt": self.global_prompt.toPlainText().strip(),
             "negative_prompt": self.negative_prompt.toPlainText().strip(),
             "steps": self.steps_spin.value(),

@@ -4,7 +4,7 @@ import zipfile
 import io
 import random
 
-def generate_novelai_image(api_key, prompt, neg_prompt, width, height, steps, cfg, sampler):
+def generate_novelai_image(api_key, prompt, neg_prompt, width, height, steps, cfg, sampler, model="nai-diffusion-3"):
     url = "https://image.novelai.net/ai/generate-image" 
     clean_key = api_key.strip()
     
@@ -20,7 +20,7 @@ def generate_novelai_image(api_key, prompt, neg_prompt, width, height, steps, cf
     
     payload = {
         "input": prompt,
-        "model": "nai-diffusion-3", 
+        "model": model, 
         "action": "generate",
         "parameters": {
             "width": safe_width,
@@ -39,7 +39,21 @@ def generate_novelai_image(api_key, prompt, neg_prompt, width, height, steps, cf
             "legacy_v3_extend": False
         }
     }
-    
+    if model.startswith("nai-diffusion-4"):
+        payload["parameters"]["v4_prompt"] = {
+            "caption": {
+                "base_caption": prompt,
+                "char_captions": []
+            },
+            "use_coords": False,
+            "use_order": True
+        }
+        payload["parameters"]["v4_negative_prompt"] = {
+            "caption": {
+                "base_caption": neg_prompt,
+                "char_captions": []
+            }
+        }
 
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)

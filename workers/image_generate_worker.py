@@ -30,7 +30,6 @@ class ImageGenerateWorker(QThread):
             if seq_num == 3: return 704, 768
             if seq_num == 4: return 1216, 448   # 바닥 와이드
         else: 
-            # 5컷 국룰 레이아웃
             if seq_num == 1: return 1216, 448
             if seq_num == 2: return 512, 768
             if seq_num == 3: return 704, 768
@@ -50,9 +49,10 @@ class ImageGenerateWorker(QThread):
                 situation = cut.get("situation_kr", "상황 설명 누락")
                 dialogue = cut.get("dialogue", "...")
                 
+                art_style = self.config.get("art_style", "")
                 base_prompt = self.config.get("global_prompt", "")
                 cut_prompt = cut.get("image_prompt", "")
-                final_prompt = f"{base_prompt}, {cut_prompt}".strip(", ")
+                final_prompt = f"{art_style},{base_prompt}, {cut_prompt}".strip(", ")
                 negative_prompt = self.config.get("negative_prompt", "")
 
                 
@@ -106,8 +106,9 @@ class SingleCutWorker(QThread):
     def run(self):
         try:
             api_key = self.config.get("novelai_api_key", "").strip()
+            art_style = self.config.get("art_style", "")
             base_prompt = self.config.get("global_prompt", "")
-            final_prompt = f"{base_prompt}, {self.prompt}".strip(", ")
+            final_prompt = f"{art_style},{base_prompt}, {self.prompt}".strip(", ")
             
             target_width, target_height = self.get_optimal_size(self.seq_num)
 
@@ -119,7 +120,8 @@ class SingleCutWorker(QThread):
                 height=target_height,
                 steps=self.config.get("steps", 28), 
                 cfg=self.config.get("cfg", 5.0),
-                sampler=self.config.get("sampler", "k_euler_ancestral")
+                sampler=self.config.get("sampler", "k_euler_ancestral"),
+                model=self.config.get("model", "nai-diffusion-3")
             )
             self.finished_signal.emit(self.seq_num, img_bytes)
         except Exception as e:

@@ -115,12 +115,14 @@ class MainWindow(QMainWindow):
         # 현재 좌측 패널 설정값 긁어오기 (기존 self.get_current_config() 활용)
         config = {
             "novelai_api_key": self.settings_panel.novelai_api_key.text(),
+            "art_style": self.settings_panel.style_input.toPlainText(),
             "global_prompt": self.settings_panel.global_prompt.toPlainText(),
             "negative_prompt": self.settings_panel.negative_prompt.toPlainText(),
             "steps": self.settings_panel.steps_spin.value(),
             "cfg": self.settings_panel.cfg_spin.value(),
             "sampler": self.settings_panel.sampler_combo.currentText(),
-            "cut_count": self.settings_panel.cut_count_spin.value()
+            "cut_count": self.settings_panel.cut_count_spin.value(),
+            "model": self.settings_panel.model_combo.currentText()
         }
         
         worker = SingleCutWorker(config, seq_num, prompt)

@@ -1,5 +1,5 @@
 # ui/comic_card.py
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect, QScrollArea, QPushButton
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGraphicsOpacityEffect, QScrollArea, QPushButton, QTextEdit
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QCursor
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal
 
@@ -10,7 +10,6 @@ class ComicImageLabel(QLabel):
         self.setMinimumSize(100, 100)
         self.setStyleSheet("border: 3px solid black;") 
 
-        
     def set_pixmap(self, pixmap):
         self._pixmap = pixmap
         self.update()
@@ -33,14 +32,13 @@ class ComicCard(QWidget):
         super().__init__(parent)
         self.seq_num = seq_num
         self.setMouseTracking(True)
-        self.text_ready = False # 대본이 도착했는지 체크하는 플래그 
-        self.cut_data = {} # 대본 텍스트 임시 저장소
+        self.text_ready = False 
+        self.cut_data = {} 
         
         base_layout = QVBoxLayout(self)
         base_layout.setContentsMargins(0, 0, 0, 0)
         
         self.image_label = ComicImageLabel()
-
         self.image_label.setText(f"컷 {seq_num}\n대기 중... ⏳")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setStyleSheet("""
@@ -69,9 +67,37 @@ class ComicCard(QWidget):
         self.scroll_container.setObjectName("scroll_container")
         scroll_layout = QVBoxLayout(self.scroll_container)
         
-        self.desc_label = QLabel(self.scroll_container)
-        self.desc_label.setWordWrap(True)
-        scroll_layout.addWidget(self.desc_label)
+        self.situation_label = QLabel(self.scroll_container)
+        self.situation_label.setWordWrap(True)
+        scroll_layout.addWidget(self.situation_label)
+        
+        self.dialogue_label = QLabel(self.scroll_container)
+        self.dialogue_label.setWordWrap(True)
+        scroll_layout.addWidget(self.dialogue_label)
+        
+        # 프롬프트 에디터 전용 타이틀 라벨
+        self.prompt_title = QLabel("✨ 프롬프트 수정 및 추가:", self.scroll_container)
+        self.prompt_title.setStyleSheet("font-size: 13px; font-weight: bold; color: #AAAAAA; margin-top: 5px;")
+        scroll_layout.addWidget(self.prompt_title)
+        
+        self.prompt_edit = QTextEdit(self.scroll_container)
+        self.prompt_edit.setMinimumHeight(120)
+        self.prompt_edit.setMaximumHeight(180)
+        self.prompt_edit.setStyleSheet("""
+            QTextEdit {
+                background-color: #222222;
+                color: #FFFFFF;
+                border: 1px solid #444444;
+                border-radius: 4px;
+                font-family: 'Malgun Gothic';
+                font-size: 13px;
+                padding: 5px;
+            }
+            QTextEdit:focus {
+                border: 1px solid #4A90E2;
+            }
+        """)
+        scroll_layout.addWidget(self.prompt_edit)
         
         self.gen_btn = QPushButton("🎨 이 컷 그림 생성하기")
         self.gen_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -98,7 +124,16 @@ class ComicCard(QWidget):
         """버튼 누르면 메인 UI로 렌더링 요청"""
         self.gen_btn.setEnabled(False)
         self.gen_btn.setText("그림 깎는 중... ⏳ (Rerolling)")
-        self.generate_requested.emit(self.seq_num, self.cut_data['situation'], self.cut_data['dialogue'], self.cut_data['prompt'])
+        
+        edited_prompt = self.prompt_edit.toPlainText().strip()
+        self.cut_data['prompt'] = edited_prompt
+        
+        self.generate_requested.emit(
+            self.seq_num, 
+            self.cut_data['situation'], 
+            self.cut_data['dialogue'], 
+            edited_prompt
+        )
 
     def resizeEvent(self, event):
         if self.overlay:
@@ -107,7 +142,6 @@ class ComicCard(QWidget):
         super().resizeEvent(event)
 
     def enterEvent(self, event):
-        """마우스 들어올 때: 그림이 완성된 상태일 때만 애니메이션"""
         if not self.image_label._pixmap.isNull(): 
             self.overlay.show()
             self.anim.stop() 
@@ -117,7 +151,10 @@ class ComicCard(QWidget):
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        """마우스 나갈 때: 그림이 완성된 상태일 때만 패널 숨김"""
+        if self.prompt_edit.hasFocus():
+            super().leaveEvent(event)
+            return
+
         if self.overlay.isVisible() and not self.image_label._pixmap.isNull():
             self.anim.stop()
             self.anim.setStartValue(self.opacity_effect.opacity())
@@ -131,17 +168,20 @@ class ComicCard(QWidget):
         self.cut_data = {'situation': situation, 'dialogue': dialogue, 'prompt': prompt}
         self.text_ready = True
         
-        html_content = (
-            f"<div style='font-family: Malgun Gothic, sans-serif; color: #EEEEEE; line-height: 1.5;'>"
-            f"  <span style='font-size: 16px; font-weight: bold; color: #4A90E2;'>🎬 [컷 {self.seq_num}] 상황:</span><br>"
-            f"  <span style='font-size: 14px;'>{situation}</span><br><br>"
-            f"  <span style='font-size: 18px; font-weight: bold; color: #FFD700;'>💬 대사:</span><br>"
-            f"  <span style='font-size: 20px; font-weight: bold; color: white;'>{dialogue}</span><br><br>"
-            f"  <span style='font-size: 13px; font-weight: bold; color: #AAAAAA;'>✨ 프롬프트:</span><br>"
-            f"  <span style='font-size: 12px; color: #888888;'>{prompt}</span>"
-            f"</div>"
+        self.situation_label.setText(
+            f"<div style='font-family: Malgun Gothic; color: #EEEEEE; line-height: 1.4;'>"
+            f"  <span style='font-size: 15px; font-weight: bold; color: #4A90E2;'>🎬 [컷 {self.seq_num}] 상황:</span><br>"
+            f"  <span style='font-size: 14px;'>{situation}</span>"
+            f"</div><br>"
         )
-        self.desc_label.setText(html_content)
+        self.dialogue_label.setText(
+            f"<div style='font-family: Malgun Gothic; color: #EEEEEE; line-height: 1.4;'>"
+            f"  <span style='font-size: 16px; font-weight: bold; color: #FFD700;'>💬 대사:</span><br>"
+            f"  <span style='font-size: 18px; font-weight: bold; color: white;'>{dialogue}</span>"
+            f"</div><br>"
+        )
+        
+        self.prompt_edit.setPlainText(prompt)
         self.image_label.setText("") 
         
         self.gen_btn.setText("🎨 이 컷 그림 생성하기")
@@ -169,6 +209,6 @@ class ComicCard(QWidget):
         if self.overlay.isVisible():
             self.anim.stop()
             self.anim.setStartValue(self.opacity_effect.opacity())
-            self.anim.setEndValue(0.0) # 0% 투명도로 페이드아웃
+            self.anim.setEndValue(0.0) 
             self.anim.finished.connect(lambda: self.overlay.hide() if self.opacity_effect.opacity() == 0.0 else None)
             self.anim.start()

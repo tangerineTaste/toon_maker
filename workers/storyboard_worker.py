@@ -10,29 +10,27 @@ class StoryboardWorker(QThread):
     success_signal = pyqtSignal(list)
     error_signal = pyqtSignal(str)
 
-    def __init__(self, api_key, story, char_info, cut_count):
+    def __init__(self, api_key, story, char_info, consistency, cut_count):
         super().__init__()
         pass # 임시
         self.api_key = api_key
         self.story = story
         self.char_info = char_info
+        self.consistency = consistency
         self.cut_count = cut_count
 
     def run(self):
         # try:
         #     file_path = "debug_storyboard.json"
             
-        #     # 파일이 있는지 체크부터! 
         #     if not os.path.exists(file_path):
         #         raise FileNotFoundError(f"{file_path} 파일이 폴더에 없어요! 파일부터 넣어주셈!")
 
-        #     # 🟢 제미나이 API 쏘는 척하면서 로컬 파일 몰래 읽어오기 
         #     with open(file_path, "r", encoding="utf-8") as f:
         #         storyboard_list = json.load(f)
 
         #     time.sleep(1.0)
             
-        #     # 파싱한 리스트 메인 UI로 쏴서, 바로 NovelAI 이미지 워커한테 토스! 
         #     self.success_signal.emit(storyboard_list)
         
         try:
@@ -41,7 +39,7 @@ class StoryboardWorker(QThread):
             
             # 제미나이 api 가동 
             storyboard_list = generate_storyboard(
-                self.api_key, self.story, self.char_info, self.cut_count
+                self.api_key, self.story, self.char_info, self.consistency, self.cut_count
             )
 
             # API로 받아온 json 저장

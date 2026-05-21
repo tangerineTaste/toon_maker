@@ -39,6 +39,12 @@ class SettingsPanel(QWidget):
         self.char_info_input.setMaximumHeight(60)
         self.char_info_input.setPlaceholderText("예: 1girl, pink hair, twintails, red eyes, school uniform")
         story_layout.addWidget(self.char_info_input)
+
+        story_layout.addWidget(QLabel("<b>📌 일관성 지침 및 추가 요구항목 (원하는 것 / 원치 않는 것)</b>"))
+        self.consistency_input = QTextEdit()
+        self.consistency_input.setMaximumHeight(60)
+        self.consistency_input.setPlaceholderText("예: 배경은 일관되게 만들어줘, 일관된 캐릭터 복장으로 만들어줘.")
+        story_layout.addWidget(self.consistency_input)
         
         cut_layout = QFormLayout()
         self.cut_count_spin = QSpinBox()
@@ -130,6 +136,7 @@ class SettingsPanel(QWidget):
                 
                 self.story_input.setText(config.get("story", ""))
                 self.char_info_input.setText(config.get("char_info", ""))
+                self.consistency_input.setText(config.get("consistency", ""))
                 self.style_input.setText(config.get("art_style", ""))
                 
                 saved_model = config.get("model", "nai-diffusion-3")
@@ -158,13 +165,14 @@ class SettingsPanel(QWidget):
                 print(f"config.json 오류 발생 (로드 실패): {e}")
 
     def save_settings(self):
-        """현재 입력된 기획안까지 싹 다 config.json에 구워버리기 😈"""
+        """현재 입력된 기획안까지 싹 다 config.json에 구워버리기 """
         config = {
             "gemini_api_key": self.gemini_key_input.text().strip(),
             "novelai_api_key": self.novelai_api_key.text().strip(),
             
             "story": self.story_input.toPlainText().strip(),
             "char_info": self.char_info_input.toPlainText().strip(),
+            "consistency": self.consistency_input.toPlainText().strip(),
             "art_style": self.style_input.toPlainText().strip(),
             
             "model": self.model_combo.currentText(),

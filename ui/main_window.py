@@ -75,6 +75,7 @@ class MainWindow(QMainWindow):
         self.settings_panel.save_settings()
         story = self.settings_panel.story_input.toPlainText()
         char_info = self.settings_panel.char_info_input.toPlainText().strip()
+        consistency = self.settings_panel.consistency_input.toPlainText().strip()
         cut_count = self.settings_panel.cut_count_spin.value()
         gemini_key = self.settings_panel.gemini_key_input.text().strip()
 
@@ -90,7 +91,7 @@ class MainWindow(QMainWindow):
         self.settings_panel.generate_btn.setText("스토리 생성 중... ⏳")
 
         # 워커 출동 로직 (기존과 동일)
-        self.story_worker = StoryboardWorker(gemini_key, story, char_info, cut_count)
+        self.story_worker = StoryboardWorker(gemini_key, story, char_info, consistency, cut_count)
         self.story_worker.success_signal.connect(self.on_storyboard_success)
         self.story_worker.error_signal.connect(self.on_worker_error)
         self.story_worker.start()

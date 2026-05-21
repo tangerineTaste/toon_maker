@@ -34,7 +34,6 @@ class ViewerPanel(QScrollArea):
         self.page_layout.setContentsMargins(20, 15, 20, 20)
         self.page_layout.setSpacing(5)
 
-        # 간지나는 헤더 타이틀 탑재 
         self.header_label = QLabel("PAGE 1")
         self.header_label.setStyleSheet("font-size: 20px; font-weight: 900; color: #111111; border: none; border-bottom: 4px solid #111111; padding-bottom: 5px;")
         self.page_layout.addWidget(self.header_label)

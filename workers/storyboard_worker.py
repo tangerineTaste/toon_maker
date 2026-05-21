@@ -45,10 +45,10 @@ class StoryboardWorker(QThread):
         #     # API로 받아온 json 저장
         #     with open("debug_storyboard.json", "w", encoding="utf-8") as f:
         #         json.dump(storyboard_list, f, ensure_ascii=False, indent=2)
-        #     print("json 저장 완료! (debug_storyboard.json 열어보셈)")
+        #     print("json 저장 완료)")
             
         #     self.success_signal.emit(storyboard_list)
             
         except Exception as e:
-            # 터지면 에러 메시지 출력
+            # 에러 메시지 출력
             self.error_signal.emit(str(e))

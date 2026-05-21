@@ -99,7 +99,7 @@ class ComicCard(QWidget):
         """)
         scroll_layout.addWidget(self.prompt_edit)
         
-        self.gen_btn = QPushButton("🎨 이 컷 그림 생성하기")
+        self.gen_btn = QPushButton("🎨 이 이미지 생성하기")
         self.gen_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.gen_btn.setStyleSheet("""
             QPushButton { background-color: #FFD700; color: black; font-weight: bold; border-radius: 5px; padding: 12px; font-size: 15px; margin-top: 10px; }
@@ -123,7 +123,7 @@ class ComicCard(QWidget):
     def on_btn_clicked(self):
         """버튼 누르면 메인 UI로 렌더링 요청"""
         self.gen_btn.setEnabled(False)
-        self.gen_btn.setText("그림 깎는 중... ⏳ (Rerolling)")
+        self.gen_btn.setText("이미지 생성 중... ⏳ (Rerolling)")
         
         edited_prompt = self.prompt_edit.toPlainText().strip()
         self.cut_data['prompt'] = edited_prompt
@@ -184,7 +184,7 @@ class ComicCard(QWidget):
         self.prompt_edit.setPlainText(prompt)
         self.image_label.setText("") 
         
-        self.gen_btn.setText("🎨 이 컷 그림 생성하기")
+        self.gen_btn.setText("🎨 이 이미지 생성하기")
         self.gen_btn.setEnabled(True)
 
         self.overlay.show()

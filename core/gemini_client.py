@@ -54,7 +54,7 @@ def generate_storyboard(api_key, story, char_info, consistency, cut_count):
     result_json = response.json()
     if 'content' not in result_json.get('candidates', [{}])[0]:
         finish_reason = result_json['candidates'][0].get('finishReason', '알 수 없음')
-        raise Exception(f"구글 검열에 의해 응답취소됐습니다.! 😭 (사유: {finish_reason})\n너무 극단적인 수위는 제미나이 코어에서 차단될 수 있습니다.")
+        raise Exception(f"구글 검열에 의해 응답취소됐습니다. (사유: {finish_reason})\n너무 극단적인 수위는 제미나이 코어에서 차단될 수 있습니다.")
     
     # 응답 텍스트 추출
     text_response = result_json['candidates'][0]['content']['parts'][0]['text']

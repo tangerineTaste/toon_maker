@@ -62,7 +62,6 @@ class ImageGenerateWorker(QThread):
                     else:
                         server_url = self.config.get("comfy_url", "127.0.0.1:8188")
                         
-                        # 🚨 스케줄러 이름 강제 세탁 (native -> normal) 😈
                         scheduler = self.config.get("noise_schedule", "native")
                         if scheduler == "native": scheduler = "normal"
                         
@@ -74,9 +73,9 @@ class ImageGenerateWorker(QThread):
                             steps=self.config.get("steps", 28), 
                             cfg=self.config.get("cfg", 5.0),
                             sampler=self.config.get("sampler", "euler_ancestral"),
-                            scheduler=scheduler, # 👈 췍!
+                            scheduler=scheduler, 
                             ckpt_name=self.config.get("ckpt_name", ""),
-                            lora_name=self.config.get("lora_name", ""), # 👈 로라 투입!
+                            lora_name=self.config.get("lora_name", ""), 
                             seed=self.config.get("seed", "")
                         )
 
@@ -142,7 +141,6 @@ class SingleCutWorker(QThread):
             else:
                 server_url = self.config.get("comfy_url", "127.0.0.1:8188")
                 
-                # 🚨 여기도 스케줄러 세탁 완! 💕
                 scheduler = self.config.get("noise_schedule", "native")
                 if scheduler == "native": scheduler = "normal"
                 
@@ -154,9 +152,9 @@ class SingleCutWorker(QThread):
                     steps=self.config.get("steps", 28), 
                     cfg=self.config.get("cfg", 5.0),
                     sampler=self.config.get("sampler", "euler_ancestral"),
-                    scheduler=scheduler, # 👈 투입!
+                    scheduler=scheduler, 
                     ckpt_name=self.config.get("ckpt_name", ""),
-                    lora_name=self.config.get("lora_name", ""), # 👈 로라 투입!
+                    lora_name=self.config.get("lora_name", ""), 
                     seed=self.config.get("seed", "")
                 )
                 

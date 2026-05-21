@@ -20,34 +20,34 @@ class StoryboardWorker(QThread):
         self.cut_count = cut_count
 
     def run(self):
-        # try:
-        #     file_path = "debug_storyboard.json"
-            
-        #     if not os.path.exists(file_path):
-        #         raise FileNotFoundError(f"{file_path} 파일이 폴더에 없어요! 파일부터 넣어주셈!")
-
-        #     with open(file_path, "r", encoding="utf-8") as f:
-        #         storyboard_list = json.load(f)
-
-        #     time.sleep(1.0)
-            
-        #     self.success_signal.emit(storyboard_list)
-        
         try:
-            if not self.api_key:
-                raise ValueError("Gemini API Key가 누락되었습니다! 좌측에서 입력 후 저장해 주세요. ")
+            file_path = "debug_storyboard.json"
             
-            # 제미나이 api 가동 
-            storyboard_list = generate_storyboard(
-                self.api_key, self.story, self.char_info, self.consistency, self.cut_count
-            )
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"{file_path} 파일이 폴더에 없어요! 파일부터 넣어주셈!")
 
-            # API로 받아온 json 저장
-            with open("debug_storyboard.json", "w", encoding="utf-8") as f:
-                json.dump(storyboard_list, f, ensure_ascii=False, indent=2)
-            print("json 저장 완료! (debug_storyboard.json 열어보셈)")
+            with open(file_path, "r", encoding="utf-8") as f:
+                storyboard_list = json.load(f)
+
+            time.sleep(1.0)
             
             self.success_signal.emit(storyboard_list)
+        
+        # try:
+        #     if not self.api_key:
+        #         raise ValueError("Gemini API Key가 누락되었습니다! 좌측에서 입력 후 저장해 주세요. ")
+            
+        #     # 제미나이 api 가동 
+        #     storyboard_list = generate_storyboard(
+        #         self.api_key, self.story, self.char_info, self.consistency, self.cut_count
+        #     )
+
+        #     # API로 받아온 json 저장
+        #     with open("debug_storyboard.json", "w", encoding="utf-8") as f:
+        #         json.dump(storyboard_list, f, ensure_ascii=False, indent=2)
+        #     print("json 저장 완료! (debug_storyboard.json 열어보셈)")
+            
+        #     self.success_signal.emit(storyboard_list)
             
         except Exception as e:
             # 터지면 에러 메시지 출력

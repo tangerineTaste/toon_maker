@@ -4,25 +4,23 @@ import os
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QFormLayout, 
                              QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, 
                              QComboBox, QPushButton, QLabel, QHBoxLayout, 
-                             QFileDialog, QScrollArea)
+                             QFileDialog, QScrollArea, QDialog)
 from PyQt6.QtCore import Qt, QTimer
+from ui.lora_manager_dialog import LoraManagerDialog
 
 class SettingsPanel(QWidget):
     def __init__(self):
         super().__init__()
-        # 스크롤바 공간 확보를 위해 패널 너비 증가
         self.setFixedWidth(340) 
+        self.comfy_lora_dir = "" # LoRA 폴더 경로 저장용 변수
         
-        # 최상위 베이스 레이아웃
         base_layout = QVBoxLayout(self)
         base_layout.setContentsMargins(5, 5, 5, 5)
         base_layout.setSpacing(10)
 
-        # 콤보박스 (UI에는 노출되지 않으며 데이터 참조용으로 유지)
         self.engine_combo = QComboBox()
         self.engine_combo.addItems(["NovelAI (클라우드)", "ComfyUI (로컬)"])
 
-        # --- 스크롤 영역 설정 ---
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
@@ -32,7 +30,7 @@ class SettingsPanel(QWidget):
         layout.setContentsMargins(5, 5, 10, 5)
         layout.setSpacing(15)
 
-        # 1. API 및 서버 설정 그룹
+        # 1. API 및 서버 설정
         api_group = QGroupBox("API 및 서버 설정")
         self.api_layout = QFormLayout(api_group)
         self.gemini_key_input = QLineEdit()
@@ -47,7 +45,7 @@ class SettingsPanel(QWidget):
         self.api_layout.addRow("Comfy 주소:", self.comfy_url_input)   
         layout.addWidget(api_group)
 
-        # 2. 만화 기획안 그룹
+        # 2. 만화 기획안
         story_group = QGroupBox("만화 기획안")
         story_layout = QVBoxLayout(story_group)
         story_layout.addWidget(QLabel("<b>상황 개요 (스토리 뼈대)</b>"))
@@ -74,7 +72,7 @@ class SettingsPanel(QWidget):
         story_layout.addLayout(cut_layout)
         layout.addWidget(story_group)
 
-        # 3. 그림체 및 퀄리티 그룹
+        # 3. 그림체 및 퀄리티 설정
         nai_group = QGroupBox("그림체 및 퀄리티 설정")
         nai_base_layout = QVBoxLayout(nai_group)
 
@@ -97,27 +95,27 @@ class SettingsPanel(QWidget):
             "nai-diffusion-4-5-full"        
         ])
         
-        # 파일 탐색기 컨테이너 (체크포인트)
         self.ckpt_container = QWidget()
         ckpt_box = QHBoxLayout(self.ckpt_container)
         ckpt_box.setContentsMargins(0, 0, 0, 0)
         self.ckpt_input = QLineEdit()
-        self.ckpt_input.setPlaceholderText("모델 파일(.safetensors) 선택")
+        self.ckpt_input.setPlaceholderText("모델 파일 선택")
         self.ckpt_browse_btn = QPushButton("선택")
         self.ckpt_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.ckpt_browse_btn.clicked.connect(self.browse_ckpt)
         ckpt_box.addWidget(self.ckpt_input)
         ckpt_box.addWidget(self.ckpt_browse_btn)
 
-        # 파일 탐색기 컨테이너 (LoRA)
+        # 시각화된 LoRA Manager 연동
         self.lora_container = QWidget()
         lora_box = QHBoxLayout(self.lora_container)
         lora_box.setContentsMargins(0, 0, 0, 0)
         self.lora_input = QLineEdit()
-        self.lora_input.setPlaceholderText("로라 파일 선택 (비우면 원본)")
-        self.lora_browse_btn = QPushButton("선택")
+        self.lora_input.setPlaceholderText("예: lora1.safetensors:0.8, lora2.pt:1.0")
+        self.lora_browse_btn = QPushButton("로라 선택")
         self.lora_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.lora_browse_btn.clicked.connect(self.browse_lora)
+        self.lora_browse_btn.setStyleSheet("background-color: #4A90E2; color: white; font-weight: bold;")
+        self.lora_browse_btn.clicked.connect(self.open_visual_lora_manager)
         lora_box.addWidget(self.lora_input)
         lora_box.addWidget(self.lora_browse_btn)
         
@@ -163,11 +161,9 @@ class SettingsPanel(QWidget):
         layout.addWidget(nai_group)
         layout.addStretch()
 
-        # 스크롤 영역 레이아웃 등록
         self.scroll_area.setWidget(self.scroll_content)
         base_layout.addWidget(self.scroll_area)
 
-        # --- 고정 버튼 영역 (스크롤 외부 하단) ---
         self.save_btn = QPushButton("현재 설정 저장하기")
         self.save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.save_btn.setStyleSheet("""
@@ -193,10 +189,14 @@ class SettingsPanel(QWidget):
         if file_path:
             self.ckpt_input.setText(os.path.basename(file_path))
 
-    def browse_lora(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "LoRA 파일 선택", "", "Lora Files (*.safetensors *.ckpt)")
-        if file_path:
-            self.lora_input.setText(os.path.basename(file_path))
+    # 신규 추가된 시각적 LoRA Manager 호출 함수
+    def open_visual_lora_manager(self):
+        dialog = LoraManagerDialog(self, lora_dir=self.comfy_lora_dir, current_loras_str=self.lora_input.text())
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 다이얼로그 내부에서 폴더 경로가 변경되었을 수 있으므로 업데이트
+            self.comfy_lora_dir = dialog.lora_dir
+            # 사용자가 설정한 LoRA 리스트(문자열)를 입력창에 반환
+            self.lora_input.setText(dialog.get_selected_loras_string())
 
     def on_engine_toggled(self, checked):
         if checked:
@@ -210,10 +210,8 @@ class SettingsPanel(QWidget):
             
         self.set_row_visible(self.api_layout, self.novelai_api_key, checked)
         self.set_row_visible(self.api_layout, self.comfy_url_input, not checked)
-        
         self.set_row_visible(self.nai_layout, self.model_combo, checked)
         self.set_row_visible(self.nai_layout, self.cfg_rescale_spin, checked)
-        
         self.set_row_visible(self.nai_layout, self.ckpt_container, not checked)
         self.set_row_visible(self.nai_layout, self.lora_container, not checked)
 
@@ -244,6 +242,9 @@ class SettingsPanel(QWidget):
                 self.gemini_key_input.setText(config.get("gemini_api_key", ""))
                 self.novelai_api_key.setText(config.get("novelai_api_key", ""))
                 self.comfy_url_input.setText(config.get("comfy_url", "127.0.0.1:8188"))
+                
+                # LoRA 폴더 설정 로드
+                self.comfy_lora_dir = config.get("comfy_lora_dir", "")
                 
                 eng = config.get("engine", "NovelAI (클라우드)")
                 is_nai = "NovelAI" in eng
@@ -281,7 +282,8 @@ class SettingsPanel(QWidget):
             "comfy_url": self.comfy_url_input.text().strip(),
             "engine": self.engine_combo.currentText(), 
             "comfy_ckpt": self.ckpt_input.text().strip(),
-            "comfy_lora": self.lora_input.text().strip(), 
+            "comfy_lora": self.lora_input.text().strip(),
+            "comfy_lora_dir": self.comfy_lora_dir, # LoRA 폴더 설정 저장
             "story": self.story_input.toPlainText().strip(),
             "char_info": self.char_info_input.toPlainText().strip(),
             "consistency": self.consistency_input.toPlainText().strip(),

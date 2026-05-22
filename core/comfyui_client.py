@@ -63,19 +63,38 @@ def generate_comfyui_image(server_url, prompt, neg_prompt, width, height, steps,
         # 4. Lora Loader (LoraManager)
         if cls_type == "Lora Loader (LoraManager)":
             if lora_name:
-                clean_lora = lora_name.replace(".safetensors", "").replace(".ckpt", "")
-                inputs["text"] = f"<lora:{clean_lora}:0.85>"
+                # 콤마로 구분된 다중 LoRA 문자열을 리스트로 분해
+                lora_list = [l.strip() for l in lora_name.split(",") if l.strip()]
+                
+                loras_value_array = []
+                lora_text_tags = []
+                
+                for lora_item in lora_list:
+                    # "파일명:가중치" 구조 분해 (가중치가 없으면 1.0으로 처리)
+                    parts = lora_item.split(":")
+                    name = parts[0].strip()
+                    weight = parts[1].strip() if len(parts) > 1 else "1.0"
+                    
+                    # 프롬프트 내부 호출용 이름 정제 (확장자 제거)
+                    clean_name = name.replace(".safetensors", "").replace(".ckpt", "")
+                    
+                    # 1) Trigger Text 태그 추가
+                    lora_text_tags.append(f"<lora:{clean_name}:{weight}>")
+                    
+                    # 2) Manager 노드용 JSON 객체 생성
+                    loras_value_array.append({
+                        "name": clean_name,
+                        "strength": str(weight),
+                        "active": True,
+                        "expanded": False,
+                        "clipStrength": str(weight),
+                        "locked": False
+                    })
+                
+                # 병합된 데이터 최종 주입
+                inputs["text"] = " ".join(lora_text_tags)
                 inputs["loras"] = {
-                    "__value__": [
-                        {
-                            "name": clean_lora,
-                            "strength": "0.85",
-                            "active": True,
-                            "expanded": False,
-                            "clipStrength": "0.85",
-                            "locked": False
-                        }
-                    ]
+                    "__value__": loras_value_array
                 }
                 
         # 5. 해상도 치환

@@ -114,11 +114,13 @@ class MainWindow(QMainWindow):
     def on_single_cut_requested(self, seq_num, situation, dialogue, prompt):
         """카드에서 생성/리롤 버튼 누르면 이미지 생성 요청"""
         # 현재 좌측 패널 설정값 긁어오기 (기존 self.get_current_config() 활용)
+        char_lora = self.settings_panel.char_lora_input.text().strip()
+        misc_lora = self.settings_panel.misc_lora_input.text().strip()
         config = {
             "engine": self.settings_panel.engine_combo.currentText(), 
             "comfy_url": self.settings_panel.comfy_url_input.text().strip(),
             "ckpt_name": self.settings_panel.ckpt_input.text().strip(),
-            "lora_name": self.settings_panel.lora_input.text().strip(),
+            "lora_name": ", ".join(filter(None, [char_lora, misc_lora])),
             "novelai_api_key": self.settings_panel.novelai_api_key.text(),
             "art_style": self.settings_panel.style_input.toPlainText(),
             "global_prompt": self.settings_panel.global_prompt.toPlainText(),

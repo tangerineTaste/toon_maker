@@ -12,7 +12,7 @@ class SettingsPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.setFixedWidth(340) 
-        self.comfy_lora_dir = "" # LoRA 폴더 경로 저장용 변수
+        self.comfy_lora_dir = ""
         
         base_layout = QVBoxLayout(self)
         base_layout.setContentsMargins(5, 5, 5, 5)
@@ -95,6 +95,7 @@ class SettingsPanel(QWidget):
             "nai-diffusion-4-5-full"        
         ])
         
+        # Comfy 체크포인트
         self.ckpt_container = QWidget()
         ckpt_box = QHBoxLayout(self.ckpt_container)
         ckpt_box.setContentsMargins(0, 0, 0, 0)
@@ -106,21 +107,36 @@ class SettingsPanel(QWidget):
         ckpt_box.addWidget(self.ckpt_input)
         ckpt_box.addWidget(self.ckpt_browse_btn)
 
-        # 시각화된 LoRA Manager 연동
-        self.lora_container = QWidget()
-        lora_box = QHBoxLayout(self.lora_container)
-        lora_box.setContentsMargins(0, 0, 0, 0)
-        self.lora_input = QLineEdit()
-        self.lora_input.setPlaceholderText("예: lora1.safetensors:0.8, lora2.pt:1.0")
-        self.lora_browse_btn = QPushButton("로라 선택")
-        self.lora_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.lora_browse_btn.setStyleSheet("background-color: #4A90E2; color: white; font-weight: bold;")
-        self.lora_browse_btn.clicked.connect(self.open_visual_lora_manager)
-        lora_box.addWidget(self.lora_input)
-        lora_box.addWidget(self.lora_browse_btn)
-        
+        # ── 캐릭터 로라 (트리거 워드 → 캐릭터 정보)
+        self.char_lora_container = QWidget()
+        char_lora_box = QHBoxLayout(self.char_lora_container)
+        char_lora_box.setContentsMargins(0, 0, 0, 0)
+        self.char_lora_input = QLineEdit()
+        self.char_lora_input.setPlaceholderText("캐릭터 LoRA 선택")
+        self.char_lora_browse_btn = QPushButton("선택")
+        self.char_lora_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.char_lora_browse_btn.setStyleSheet("background-color: #4A90E2; color: white; font-weight: bold;")
+        self.char_lora_browse_btn.clicked.connect(self.open_char_lora_manager)
+        char_lora_box.addWidget(self.char_lora_input)
+        char_lora_box.addWidget(self.char_lora_browse_btn)
+
+        # ── 기타 로라 (트리거 워드 → 공통 태그)
+        self.misc_lora_container = QWidget()
+        misc_lora_box = QHBoxLayout(self.misc_lora_container)
+        misc_lora_box.setContentsMargins(0, 0, 0, 0)
+        self.misc_lora_input = QLineEdit()
+        self.misc_lora_input.setPlaceholderText("기타 LoRA 선택")
+        self.misc_lora_browse_btn = QPushButton("선택")
+        self.misc_lora_browse_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.misc_lora_browse_btn.setStyleSheet("background-color: #7B68EE; color: white; font-weight: bold;")
+        self.misc_lora_browse_btn.clicked.connect(self.open_misc_lora_manager)
+        misc_lora_box.addWidget(self.misc_lora_input)
+        misc_lora_box.addWidget(self.misc_lora_browse_btn)
+
+        # 그림체 태그 (NAI 전용)
         self.style_input = QTextEdit()
         self.style_input.setMaximumHeight(60)
+
         self.global_prompt = QTextEdit()
         self.global_prompt.setMaximumHeight(60)
         self.negative_prompt = QTextEdit()
@@ -142,11 +158,12 @@ class SettingsPanel(QWidget):
         self.noise_schedule_combo.addItems(["native", "karras", "exponential"])
         
         self.sampler_combo = QComboBox()
-        self.sampler_combo.addItems(["k_euler_ancestral", "k_euler", "euler", "euler_ancestral", "dpmpp_2m","er_sde"])
+        self.sampler_combo.addItems(["k_euler_ancestral", "k_euler", "euler", "euler_ancestral", "dpmpp_2m", "er_sde"])
 
         self.nai_layout.addRow("NAI 모델:", self.model_combo)
         self.nai_layout.addRow("Comfy 모델:", self.ckpt_container)
-        self.nai_layout.addRow("Comfy 로라:", self.lora_container) 
+        self.nai_layout.addRow("캐릭터 로라:", self.char_lora_container)
+        self.nai_layout.addRow("기타 로라:", self.misc_lora_container)
         self.nai_layout.addRow("그림체 태그:", self.style_input)
         self.nai_layout.addRow("공통 태그:", self.global_prompt)
         self.nai_layout.addRow("제외 태그:", self.negative_prompt)
@@ -189,14 +206,51 @@ class SettingsPanel(QWidget):
         if file_path:
             self.ckpt_input.setText(os.path.basename(file_path))
 
-    # 신규 추가된 시각적 LoRA Manager 호출 함수
-    def open_visual_lora_manager(self):
-        dialog = LoraManagerDialog(self, lora_dir=self.comfy_lora_dir, current_loras_str=self.lora_input.text())
+    def _open_lora_manager(self, current_str: str) -> "LoraManagerDialog | None":
+        """공통 로라 매니저 다이얼로그 오픈 헬퍼. 수락 시 dialog 반환, 취소 시 None."""
+        dialog = LoraManagerDialog(
+            self,
+            lora_dir=self.comfy_lora_dir,
+            current_loras_str=current_str
+        )
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            # 다이얼로그 내부에서 폴더 경로가 변경되었을 수 있으므로 업데이트
-            self.comfy_lora_dir = dialog.lora_dir
-            # 사용자가 설정한 LoRA 리스트(문자열)를 입력창에 반환
-            self.lora_input.setText(dialog.get_selected_loras_string())
+            self.comfy_lora_dir = dialog.base_lora_dir
+            return dialog
+        return None
+
+    def open_char_lora_manager(self):
+        """캐릭터 로라 선택 → 트리거 워드를 캐릭터 정보에 추가"""
+        dialog = self._open_lora_manager(self.char_lora_input.text())
+        if dialog is None:
+            return
+
+        self.char_lora_input.setText(dialog.get_selected_loras_string())
+
+        trigger_words = dialog.get_trigger_words_for_selected()
+        if trigger_words:
+            existing = self.char_info_input.toPlainText().strip()
+            existing_tags = {t.strip() for t in existing.split(",") if t.strip()}
+            fresh = [w for w in trigger_words if w not in existing_tags]
+            if fresh:
+                merged = (existing + ", " + ", ".join(fresh)).strip(", ")
+                self.char_info_input.setPlainText(merged)
+
+    def open_misc_lora_manager(self):
+        """기타 로라 선택 → 트리거 워드를 공통 태그에 추가"""
+        dialog = self._open_lora_manager(self.misc_lora_input.text())
+        if dialog is None:
+            return
+
+        self.misc_lora_input.setText(dialog.get_selected_loras_string())
+
+        trigger_words = dialog.get_trigger_words_for_selected()
+        if trigger_words:
+            existing = self.global_prompt.toPlainText().strip()
+            existing_tags = {t.strip() for t in existing.split(",") if t.strip()}
+            fresh = [w for w in trigger_words if w not in existing_tags]
+            if fresh:
+                merged = (existing + ", " + ", ".join(fresh)).strip(", ")
+                self.global_prompt.setPlainText(merged)
 
     def on_engine_toggled(self, checked):
         if checked:
@@ -213,7 +267,9 @@ class SettingsPanel(QWidget):
         self.set_row_visible(self.nai_layout, self.model_combo, checked)
         self.set_row_visible(self.nai_layout, self.cfg_rescale_spin, checked)
         self.set_row_visible(self.nai_layout, self.ckpt_container, not checked)
-        self.set_row_visible(self.nai_layout, self.lora_container, not checked)
+        self.set_row_visible(self.nai_layout, self.char_lora_container, not checked)  # ComfyUI 전용
+        self.set_row_visible(self.nai_layout, self.misc_lora_container, not checked)  # ComfyUI 전용
+        self.set_row_visible(self.nai_layout, self.style_input, checked)              # NAI 전용
 
         current_scheduler = self.noise_schedule_combo.currentText()
         self.noise_schedule_combo.blockSignals(True)
@@ -242,8 +298,6 @@ class SettingsPanel(QWidget):
                 self.gemini_key_input.setText(config.get("gemini_api_key", ""))
                 self.novelai_api_key.setText(config.get("novelai_api_key", ""))
                 self.comfy_url_input.setText(config.get("comfy_url", "127.0.0.1:8188"))
-                
-                # LoRA 폴더 설정 로드
                 self.comfy_lora_dir = config.get("comfy_lora_dir", "")
                 
                 eng = config.get("engine", "NovelAI (클라우드)")
@@ -252,7 +306,8 @@ class SettingsPanel(QWidget):
                 self.on_engine_toggled(is_nai) 
                 
                 self.ckpt_input.setText(config.get("comfy_ckpt", ""))
-                self.lora_input.setText(config.get("comfy_lora", "")) 
+                self.char_lora_input.setText(config.get("comfy_char_lora", ""))
+                self.misc_lora_input.setText(config.get("comfy_misc_lora", ""))
                 self.story_input.setText(config.get("story", ""))
                 self.char_info_input.setText(config.get("char_info", ""))
                 self.consistency_input.setText(config.get("consistency", ""))
@@ -276,14 +331,21 @@ class SettingsPanel(QWidget):
                 pass
 
     def save_settings(self):
+        # comfy_lora는 캐릭터+기타 로라를 합쳐서 저장 (image_generate_worker 호환용)
+        char_lora = self.char_lora_input.text().strip()
+        misc_lora = self.misc_lora_input.text().strip()
+        combined_lora = ", ".join(filter(None, [char_lora, misc_lora]))
+
         config = {
             "gemini_api_key": self.gemini_key_input.text().strip(),
             "novelai_api_key": self.novelai_api_key.text().strip(),
             "comfy_url": self.comfy_url_input.text().strip(),
             "engine": self.engine_combo.currentText(), 
             "comfy_ckpt": self.ckpt_input.text().strip(),
-            "comfy_lora": self.lora_input.text().strip(),
-            "comfy_lora_dir": self.comfy_lora_dir, # LoRA 폴더 설정 저장
+            "comfy_char_lora": char_lora,
+            "comfy_misc_lora": misc_lora,
+            "comfy_lora": combined_lora,   # worker에서 읽는 키 유지
+            "comfy_lora_dir": self.comfy_lora_dir,
             "story": self.story_input.toPlainText().strip(),
             "char_info": self.char_info_input.toPlainText().strip(),
             "consistency": self.consistency_input.toPlainText().strip(),

@@ -6,6 +6,41 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QTreeWidget, QTreeWidgetItem)
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
+import json
+
+def extract_trigger_words(file_path: str) -> list[str]:
+    """
+    LoRA 파일과 같은 폴더의 동명 .metadata.json에서
+    트리거 워드를 추출. 실패하면 빈 리스트 반환.
+    """
+    try:
+        base = os.path.splitext(file_path)[0]
+        meta_path = base + ".metadata.json"
+        
+        if not os.path.exists(meta_path):
+            return []
+        
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        
+        # civitai.trainedWords (업로드된 예시 구조)
+        civitai = meta.get("civitai", {})
+        if civitai:
+            trained = civitai.get("trainedWords", [])
+            if trained and isinstance(trained, list):
+                return [w.strip() for w in trained if w.strip()]
+        
+        # fallback: 최상위에 trainedWords가 있는 경우
+        trained = meta.get("trainedWords", [])
+        if trained:
+            if isinstance(trained, list):
+                return [w.strip() for w in trained if w.strip()]
+            if isinstance(trained, str):
+                return [w.strip() for w in trained.split(",") if w.strip()]
+
+    except Exception:
+        pass
+    return []
 
 class LoraCard(QWidget):
     def __init__(self, rel_path, file_path, initial_weight=1.0, is_selected=False, state_callback=None):
@@ -40,6 +75,12 @@ class LoraCard(QWidget):
             self.image_label.setText("No Image")
             
         layout.addWidget(self.image_label)
+
+        self.trigger_words = extract_trigger_words(self.file_path)
+
+        tooltip = self.rel_path
+        if self.trigger_words:
+            tooltip += f"\n\n🏷️ 트리거 워드:\n{', '.join(self.trigger_words)}"
         
         self.name_label = QLabel(self.clean_name)
         self.name_label.setWordWrap(True)
@@ -302,3 +343,14 @@ class LoraManagerDialog(QDialog):
         for rel_path, weight in self.selected_map.items():
             selected.append(f"{rel_path}:{weight:.1f}")
         return ", ".join(selected)
+    
+    def get_trigger_words_for_selected(self) -> list[str]:
+        words = []
+        seen = set()
+        for card in self.cards:
+            if card.rel_path in self.selected_map and card.trigger_words:
+                for w in card.trigger_words:
+                    if w not in seen:
+                        seen.add(w)
+                        words.append(w)
+        return words
